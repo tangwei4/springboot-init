@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.springbootinit.mapper.UserMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.springbootinit.entity.User">
+        <id column="ID" property="id" jdbcType="BIGINT"/>
+        <result column="STUDENT_NO" property="studentNo" jdbcType="VARCHAR"/>
+        <result column="NAME" property="name" jdbcType="VARCHAR"/>
+        <result column="CLASS" property="clazz" jdbcType="VARCHAR"/>
+        <result column="SEX" property="sex" jdbcType="TINYINT"/>
+        <result column="AGE" property="age" jdbcType="INTEGER"/>
+        <result column="STUDENT_INFO" property="studentInfo" jdbcType="VARCHAR"/>
+        <result column="CREATED_TIME" property="createdTime" jdbcType="TIMESTAMP"/>
+        <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 基础字段列表 -->
+    <sql id="Base_Column_List">
+        ID, STUDENT_NO, NAME, CLASS, SEX, AGE, STUDENT_INFO, CREATED_TIME, UPDATE_TIME
+    </sql>
+
+    <!-- ==================== 新增 ==================== -->
+
+    <!-- 新增用户（CLOB 字段使用 VARCHAR 类型插入） -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="ID">
+        INSERT INTO `user` (
+        STUDENT_NO, NAME, CLASS, SEX, AGE, STUDENT_INFO
+        ) VALUES (
+        #{studentNo, jdbcType=VARCHAR},
+        #{name, jdbcType=VARCHAR},
+        #{clazz, jdbcType=VARCHAR},
+        #{sex, jdbcType=TINYINT},
+        #{age, jdbcType=INTEGER},
+        #{studentInfo, jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!-- 批量新增用户（CLOB 字段使用 VARCHAR 类型） -->
+    <insert id="batchInsert" useGeneratedKeys="true" keyProperty="id" keyColumn="ID">
+        INSERT INTO `user` (
+        STUDENT_NO, NAME, CLASS, SEX, AGE, STUDENT_INFO
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.studentNo, jdbcType=VARCHAR},
+            #{item.name, jdbcType=VARCHAR},
+            #{item.clazz, jdbcType=VARCHAR},
+            #{item.sex, jdbcType=TINYINT},
+            #{item.age, jdbcType=INTEGER},
+            #{item.studentInfo, jdbcType=VARCHAR}
+            )
+        </foreach>
+    </insert>
+
+    <!-- ==================== 删除 ==================== -->
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById">
+        DELETE FROM `user` WHERE ID = #{id}
+    </delete>
+
+    <!-- 根据学号删除 -->
+    <delete id="deleteByStudentNo">
+        DELETE FROM `user` WHERE STUDENT_NO = #{studentNo}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteByIds">
+        DELETE FROM `user` WHERE ID IN
+        <foreach collection="idList" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- ==================== 更新 ==================== -->
+
+    <!-- 根据ID更新（只更新非空字段，CLOB 字段单独处理） -->
+    <update id="updateById">
+        UPDATE `user`
+        <set>
+            <if test="studentNo != null and studentNo != ''">
+                STUDENT_NO = #{studentNo, jdbcType=VARCHAR},
+            </if>
+            <if test="name != null and name != ''">
+                NAME = #{name, jdbcType=VARCHAR},
+            </if>
+            <if test="clazz != null and clazz != ''">
+                CLASS = #{clazz, jdbcType=VARCHAR},
+            </if>
+            <if test="sex != null">
+                SEX = #{sex, jdbcType=TINYINT},
+            </if>
+            <if test="age != null">
+                AGE = #{age, jdbcType=INTEGER},
+            </if>
+            <if test="studentInfo != null">
+                STUDENT_INFO = #{studentInfo, jdbcType=VARCHAR},
+            </if>
+            UPDATE_TIME = NOW()
+        </set>
+        WHERE ID = #{id}
+    </update>
+
+    <!-- 根据ID更新（全量更新） -->
+    <update id="updateByIdFull">
+        UPDATE `user`
+        SET
+        STUDENT_NO = #{studentNo, jdbcType=VARCHAR},
+        NAME = #{name, jdbcType=VARCHAR},
+        CLASS = #{clazz, jdbcType=VARCHAR},
+        SEX = #{sex, jdbcType=TINYINT},
+        AGE = #{age, jdbcType=INTEGER},
+        STUDENT_INFO = #{studentInfo, jdbcType=VARCHAR},
+        UPDATE_TIME = NOW()
+        WHERE ID = #{id}
+    </update>
+
+    <!-- ==================== 查询 ==================== -->
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        WHERE ID = #{id}
+    </select>
+
+    <!-- 根据学号查询 -->
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        WHERE STUDENT_NO = #{studentNo}
+    </select>
+
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        ORDER BY ID DESC
+    </select>
+
+    <!-- 根据班级查询 -->
+    <select id="selectByClass" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        WHERE CLASS = #{clazz}
+        ORDER BY ID DESC
+    </select>
+
+    <!-- 根据姓名模糊查询 -->
+    <select id="selectByNameLike" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        WHERE NAME LIKE CONCAT('%', #{name}, '%')
+        ORDER BY ID DESC
+    </select>
+
+    <!-- 根据性别查询 -->
+    <select id="selectBySex" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        WHERE SEX = #{sex}
+        ORDER BY ID DESC
+    </select>
+
+    <!-- 根据年龄范围查询 -->
+    <select id="selectByAgeRange" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        <where>
+            <if test="minAge != null">
+                AND AGE >= #{minAge}
+            </if>
+            <if test="maxAge != null">
+                AND AGE &lt;= #{maxAge}
+            </if>
+        </where>
+        ORDER BY AGE ASC
+    </select>
+
+    <!-- 条件查询（动态SQL，CLOB 字段使用模糊查询） -->
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        <where>
+            <if test="id != null">
+                AND ID = #{id}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND STUDENT_NO = #{studentNo}
+            </if>
+            <if test="name != null and name != ''">
+                AND NAME LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="clazz != null and clazz != ''">
+                AND CLASS = #{clazz}
+            </if>
+            <if test="sex != null">
+                AND SEX = #{sex}
+            </if>
+            <if test="age != null">
+                AND AGE = #{age}
+            </if>
+            <!-- CLOB 字段使用 LIKE 模糊查询 -->
+            <if test="studentInfo != null and studentInfo != ''">
+                AND STUDENT_INFO LIKE CONCAT('%', #{studentInfo}, '%')
+            </if>
+            <if test="createdTime != null">
+                AND DATE_FORMAT(CREATED_TIME, '%Y-%m-%d') = DATE_FORMAT(#{createdTime}, '%Y-%m-%d')
+            </if>
+            <if test="updateTime != null">
+                AND DATE_FORMAT(UPDATE_TIME, '%Y-%m-%d') = DATE_FORMAT(#{updateTime}, '%Y-%m-%d')
+            </if>
+        </where>
+        ORDER BY ID DESC
+    </select>
+
+    <!-- 分页查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        ORDER BY ID DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计总数 -->
+    <select id="countAll" resultType="java.lang.Long">
+        SELECT COUNT(1) FROM `user`
+    </select>
+
+    <!-- 根据条件统计总数 -->
+    <select id="countByCondition" resultType="java.lang.Long">
+        SELECT COUNT(1) FROM `user`
+        <where>
+            <if test="id != null">
+                AND ID = #{id}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND STUDENT_NO = #{studentNo}
+            </if>
+            <if test="name != null and name != ''">
+                AND NAME LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="clazz != null and clazz != ''">
+                AND CLASS = #{clazz}
+            </if>
+            <if test="sex != null">
+                AND SEX = #{sex}
+            </if>
+            <if test="age != null">
+                AND AGE = #{age}
+            </if>
+        </where>
+    </select>
+
+</mapper>
