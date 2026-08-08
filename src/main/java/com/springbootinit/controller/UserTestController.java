@@ -1,11 +1,15 @@
 package com.springbootinit.controller;
 
+import com.alibaba.druid.pool.DruidDataSource;
+import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
+import com.baomidou.dynamic.datasource.ds.ItemDataSource;
 import com.springbootinit.common.BaseResponse;
 import com.springbootinit.common.PageResult;
 import com.springbootinit.common.ResultUtils;
 import com.springbootinit.entity.User;
 import com.springbootinit.service.UserService;
 import com.springbootinit.util.RedisLockUtil;
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.sql.DataSource;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,6 +51,62 @@ public class UserTestController {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @GetMapping("/datasource/info")
+    public BaseResponse<Map<String, Object>> getDataSourceInfo() {
+        Map<String, Object> result = new HashMap<>();
+
+        if (dataSource instanceof DynamicRoutingDataSource) {
+            DynamicRoutingDataSource dynamicDataSource = (DynamicRoutingDataSource) dataSource;
+
+            // 获取所有数据源
+            Map<String, DataSource> dataSources = dynamicDataSource.getDataSources();
+
+            Map<String, Object> dataSourceInfos = new HashMap<>();
+            for (Map.Entry<String, DataSource> entry : dataSources.entrySet()) {
+                String dsName = entry.getKey();
+                DataSource dataSource = ((ItemDataSource) entry.getValue()).getDataSource();
+                Map<String, Object> dsInfo = new HashMap<>();
+                if (dataSource instanceof HikariDataSource) {
+                    com.zaxxer.hikari.HikariDataSource hikari = (com.zaxxer.hikari.HikariDataSource) dataSource;
+                    dsInfo.put("type", "HikariCP");
+                    dsInfo.put("poolName", hikari.getPoolName());
+                    dsInfo.put("maximumPoolSize", hikari.getMaximumPoolSize());
+                    dsInfo.put("minimumIdle", hikari.getMinimumIdle());
+                    dsInfo.put("connectionTimeout", hikari.getConnectionTimeout());
+                    dsInfo.put("idleTimeout", hikari.getIdleTimeout());
+                    dsInfo.put("maxLifetime", hikari.getMaxLifetime());
+                    // 获取连接池统计信息
+                    try {
+                        dsInfo.put("activeConnections", hikari.getHikariPoolMXBean().getActiveConnections());
+                        dsInfo.put("idleConnections", hikari.getHikariPoolMXBean().getIdleConnections());
+                        dsInfo.put("totalConnections", hikari.getHikariPoolMXBean().getTotalConnections());
+                    } catch (Exception e) {
+                        dsInfo.put("activeConnections", "无法获取");
+                    }
+                } else if (dataSource instanceof DruidDataSource) {
+                    com.alibaba.druid.pool.DruidDataSource druid = (com.alibaba.druid.pool.DruidDataSource) dataSource;
+                    dsInfo.put("type", "Druid");
+                    dsInfo.put("poolName", druid.getName());
+                    dsInfo.put("maxActive", druid.getMaxActive());
+                    dsInfo.put("initialSize", druid.getInitialSize());
+                    dsInfo.put("activeConnections", druid.getActiveCount());
+                    dsInfo.put("idleConnections", druid.getPoolingCount());
+                }
+                dataSourceInfos.put(dsName, dsInfo);
+            }
+            result.put("dataSourceInfos", dataSourceInfos);
+        } else {
+            result.put("info", "当前数据源不是 DynamicRoutingDataSource");
+            result.put("dataSourceType", dataSource.getClass().getName());
+        }
+
+        return ResultUtils.success(result);
+    }
+
 
     // ==================== 基础增删改查 ====================
 

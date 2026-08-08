@@ -14,7 +14,7 @@ spring:
         max-idle: 8
         min-idle: 0
 
-  # 多数据源配置
+  # 多数据源配置（使用 Druid）
   datasource:
     dynamic:
       # 默认数据源（必须配置）
@@ -28,15 +28,78 @@ spring:
           username: root
           password: Root@123456
           driver-class-name: com.mysql.cj.jdbc.Driver
+          # Druid 连接池配置
+          druid:
+            # ========== 基本连接池配置 ==========
+            # 初始化连接数
+            initial-size: 5
+            # 最小空闲连接数
+            min-idle: 5
+            # 最大活跃连接数
+            max-active: 20
+            # 获取连接超时时间（毫秒）
+            max-wait: 60000
+            # 连接保持空闲而不被驱逐的最小时间（毫秒）
+            min-evictable-idle-time-millis: 300000
+            # 检测连接池中空闲连接的间隔时间（毫秒）
+            time-between-eviction-runs-millis: 60000
+            # 连接池中连接是否可用（validationQuery 不为空时生效）
+            test-while-idle: true
+            # 从连接池获取连接时是否测试连接
+            test-on-borrow: false
+            # 归还连接时是否测试连接
+            test-on-return: false
+            # 验证连接是否有效的 SQL
+            validation-query: SELECT 1
+            # 是否缓存 PreparedStatement
+            pool-prepared-statements: true
+            # 每个连接最多缓存的 PreparedStatement 数量
+            max-pool-prepared-statement-per-connection-size: 20
+            # 连接池名称
+            name: SourceDruidPool
 
-        # 数据源2：target_db (对应你 Docker 的 3307)
+            # ========== 连接泄漏检测（开发环境建议开启） ==========
+            # 是否移除泄露的连接
+            remove-abandoned: true
+            # 泄露连接的超时时间（秒）
+            remove-abandoned-timeout: 180
+            # 是否打印连接泄露日志
+            log-abandoned: true
+
+            # ========== 监控配置 ==========
+            # 监控统计拦截的 filters
+            filters: stat,wall,log4j2
+            # 通过 connectProperties 属性来打开 mergeSql 功能；慢 SQL 记录
+            connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+            # 合并多个 DruidDataSource 的监控数据
+            use-global-data-source-stat: true
+
+        # 数据源2：target_db
         target:
           url: jdbc:mysql://127.0.0.1:3307/target_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
           username: root
           password: Root@123456
           driver-class-name: com.mysql.cj.jdbc.Driver
-
-# MyBatis-Plus 配置（可选）
+          druid:
+            initial-size: 5
+            min-idle: 5
+            max-active: 20
+            max-wait: 60000
+            min-evictable-idle-time-millis: 300000
+            time-between-eviction-runs-millis: 60000
+            test-while-idle: true
+            test-on-borrow: false
+            test-on-return: false
+            validation-query: SELECT 1
+            pool-prepared-statements: true
+            max-pool-prepared-statement-per-connection-size: 20
+            name: TargetDruidPool
+            remove-abandoned: true
+            remove-abandoned-timeout: 180
+            log-abandoned: true
+            filters: stat,wall,log4j2
+            connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+# MyBatis-Plus 配置
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
