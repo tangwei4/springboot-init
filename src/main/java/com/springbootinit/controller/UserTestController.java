@@ -6,6 +6,7 @@ import com.baomidou.dynamic.datasource.ds.ItemDataSource;
 import com.springbootinit.common.BaseResponse;
 import com.springbootinit.common.PageResult;
 import com.springbootinit.common.ResultUtils;
+import com.springbootinit.entity.GenerateProgress;
 import com.springbootinit.entity.User;
 import com.springbootinit.service.UserService;
 import com.springbootinit.util.RedisLockUtil;
@@ -30,6 +31,7 @@ import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/test/user")
+@RequestMapping("/api/user")
 public class UserTestController {
 
     @Autowired
@@ -295,5 +297,75 @@ public class UserTestController {
             log.error("Redis 连接失败", e);
             return ResultUtils.error(500, "Redis 连接失败: " + e.getMessage());
         }
+    }
+
+
+    // ==================== 批量生成接口 ====================
+    @PostMapping("/generate/async")
+    public BaseResponse<String> generateUsersAsync(@RequestParam(defaultValue = "1000000") Integer totalCount,
+                                                   @RequestParam(defaultValue = "2000") Integer batchSize) {
+        log.info("接收到异步生成请求, totalCount: {}, batchSize: {}", totalCount, batchSize);
+
+        // 提交异步任务
+        CompletableFuture<Integer> future = userService.generateUsersAsync(totalCount, batchSize);
+
+        // 异步处理结果（不阻塞主线程）
+        future.whenComplete((result, throwable) -> {
+            if (throwable != null) {
+                log.error("异步生成数据失败", throwable);
+            } else {
+                log.info("异步生成数据完成, 共插入: {} 条", result);
+            }
+        });
+
+        // 返回任务ID（从进度中获取）
+        String taskId = userService.getAllProgress().keySet().stream()
+                .filter(key -> !key.startsWith("sync-"))
+                .findFirst()
+                .orElse("unknown");
+
+        return ResultUtils.success("任务已提交，请通过进度接口查询: /api/user/generate/progress/" + taskId);
+    }
+
+    @PostMapping("/generate/sync")
+    public BaseResponse<Integer> generateUsersSync(@RequestParam(defaultValue = "10000") Integer totalCount,
+                                                   @RequestParam(defaultValue = "1000") Integer batchSize) {
+        log.info("接收到同步生成请求, totalCount: {}, batchSize: {}", totalCount, batchSize);
+        long startTime = System.currentTimeMillis();
+
+        int result = userService.generateUsersSync(totalCount, batchSize);
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("同步生成完成, 共插入: {} 条, 耗时: {}ms", result, duration);
+
+        return ResultUtils.success(result);
+    }
+
+    @GetMapping("/generate/progress/{taskId}")
+    public BaseResponse<GenerateProgress> getGenerateProgress(@PathVariable String taskId) {
+        GenerateProgress progress = userService.getGenerateProgress(taskId);
+        if (progress == null) {
+            return ResultUtils.error(404, "任务不存在");
+        }
+        return ResultUtils.success(progress);
+    }
+
+    @GetMapping("/generate/progress/all")
+    public BaseResponse<Map<String, GenerateProgress>> getAllProgress() {
+        Map<String, GenerateProgress> allProgress = userService.getAllProgress();
+        return ResultUtils.success(allProgress);
+    }
+
+    @DeleteMapping("/generate/progress/{taskId}")
+    public BaseResponse<Boolean> clearProgress(@PathVariable String taskId) {
+        GenerateProgress progress = userService.getGenerateProgress(taskId);
+        if (progress == null) {
+            return ResultUtils.error(404, "任务不存在");
+        }
+        if ("RUNNING".equals(progress.getStatus())) {
+            return ResultUtils.error(400, "任务正在运行中，不能清除");
+        }
+        // 实际清除逻辑需要扩展 Service 方法
+        return ResultUtils.success(true);
     }
 }

@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户数据管理平台</title>
+    <style>
+        /* ===== CSS 变量 ===== */
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --primary-bg: #eef2ff;
+            --success: #22c55e;
+            --success-bg: #dcfce7;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+            --transition: all 0.25s ease;
+        }
+
+        /* ===== 全局重置 ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        /* ===== 布局容器 ===== */
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* ===== 头部 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 20px 24px;
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header h1 .badge {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gray-500);
+            background: var(--gray-100);
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* ===== 统计卡片 ===== */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+            transition: var(--transition);
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-card .label { font-size: 13px; color: var(--gray-500); }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: var(--gray-900); margin-top: 4px; }
+        .stat-card .sub { font-size: 13px; color: var(--gray-400); margin-top: 4px; }
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card.danger { border-left-color: var(--danger); }
+        .stat-card.warning { border-left-color: var(--warning); }
+
+        /* ===== 面板通用 ===== */
+        .panel {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .panel-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-header h2 .count {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--gray-500);
+        }
+        .panel-body { padding: 20px 24px; }
+
+        /* ===== 表格 ===== */
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        table th {
+            text-align: left;
+            padding: 12px 12px;
+            background: var(--gray-50);
+            font-weight: 600;
+            color: var(--gray-600);
+            border-bottom: 2px solid var(--gray-200);
+            white-space: nowrap;
+        }
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--gray-100);
+            vertical-align: middle;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        table tr:hover td { background: var(--primary-bg); }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-badge.running { background: var(--warning-bg); color: #b45309; }
+        .status-badge.completed { background: var(--success-bg); color: #15803d; }
+        .status-badge.failed { background: var(--danger-bg); color: #dc2626; }
+
+        /* ===== 表单 ===== */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-600);
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+            background: #fff;
+            width: 100%;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        /* ===== 按钮 ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: var(--warning); color: #fff; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .btn-outline { background: transparent; border: 1px solid var(--gray-300); }
+        .btn-outline:hover { background: var(--gray-100); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        /* ===== 进度条 ===== */
+        .progress-bar-wrap {
+            width: 100%;
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 6px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        .progress-bar.completed { background: linear-gradient(90deg, var(--success), #4ade80); }
+        .progress-bar.failed { background: var(--danger); }
+
+        /* ===== 弹窗 ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: var(--radius);
+            max-width: 560px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .modal-header h3 { font-size: 18px; }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-400);
+            transition: var(--transition);
+        }
+        .modal-close:hover { color: var(--gray-700); }
+        .modal-body { padding: 24px; }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* ===== Toast ===== */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 380px;
+        }
+        .toast {
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            background: var(--gray-900);
+            color: #fff;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .toast.success { background: #15803d; }
+        .toast.error { background: #dc2626; }
+        .toast.warning { background: #b45309; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ===== 空状态 ===== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-400);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .header { flex-direction: column; align-items: stretch; }
+            .header-actions { justify-content: stretch; }
+            .header-actions .btn { flex: 1; justify-content: center; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .form-row { grid-template-columns: 1fr; }
+            .panel-body { padding: 16px; }
+            .modal { margin: 10px; }
+            .table-wrap table { font-size: 12px; }
+            .table-wrap table th,
+            .table-wrap table td { padding: 6px 8px; }
+        }
+        @media (max-width: 480px) {
+            .stats { grid-template-columns: 1fr; }
+        }
+
+        /* ===== 工具 ===== */
+        .flex { display: flex; }
+        .flex-center { align-items: center; gap: 8px; }
+        .gap-2 { gap: 8px; }
+        .gap-4 { gap: 16px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-4 { margin-top: 16px; }
+        .text-muted { color: var(--gray-500); }
+        .text-sm { font-size: 13px; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .w-full { width: 100%; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ===== 头部 ===== -->
+    <header class="header">
+        <h1>
+            👥 用户数据管理
+            <span class="badge">v1.0</span>
+        </h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openAddModal()">➕ 新增用户</button>
+            <button class="btn btn-success" onclick="openGenerateModal()">⚡ 批量生成</button>
+            <button class="btn btn-outline" onclick="loadUsers()">🔄 刷新</button>
+        </div>
+    </header>
+
+    <!-- ===== 统计卡片 ===== -->
+    <section class="stats" id="statsContainer">
+        <div class="stat-card">
+            <div class="label">👤 用户总数</div>
+            <div class="value" id="statTotal">0</div>
+            <div class="sub">已注册用户</div>
+        </div>
+        <div class="stat-card success">
+            <div class="label">✅ 今日新增</div>
+            <div class="value" id="statToday">0</div>
+            <div class="sub">最近24小时</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="label">⏳ 生成任务</div>
+            <div class="value" id="statTasks">0</div>
+            <div class="sub">运行中 / 总计</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="label">⚡ 生成速度</div>
+            <div class="value" id="statSpeed">0</div>
+            <div class="sub">条/秒</div>
+        </div>
+    </section>
+
+    <!-- ===== 进度面板 ===== -->
+    <div class="panel" id="progressPanel">
+        <div class="panel-header">
+            <h2>📊 数据生成进度 <span class="count" id="progressCount">(0 个任务)</span></h2>
+            <button class="btn btn-sm btn-outline" onclick="loadAllProgress()">🔄 刷新进度</button>
+        </div>
+        <div class="panel-body" id="progressList">
+            <div class="empty-state">
+                <div class="icon">📭</div>
+                <p>暂无进行中的任务</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 用户列表 ===== -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2>📋 用户列表 <span class="count" id="userCount">(共 0 条)</span></h2>
+            <div class="flex gap-2">
+                <input type="text" id="searchInput" placeholder="🔍 搜索姓名/学号..." class="form-group" style="width:200px;padding:6px 12px;border:1px solid var(--gray-200);border-radius:8px;">
+                <button class="btn btn-sm btn-outline" onclick="searchUsers()">搜索</button>
+            </div>
+        </div>
+        <div class="panel-body" style="padding:0;">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                            <th>性别</th>
+                            <th>年龄</th>
+                            <th>学生信息</th>
+                            <th>创建时间</th>
+                            <th style="min-width:120px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <tr><td colspan="9" class="empty-state"><div class="icon">📭</div><p>暂无数据，请新增或生成</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="panel-header" style="border-top:1px solid var(--gray-200);">
+            <div class="flex-center text-sm text-muted" id="paginationInfo">共 0 条</div>
+            <div class="flex gap-2" id="paginationControls">
+                <button class="btn btn-sm btn-outline" onclick="changePage(-1)">上一页</button>
+                <span class="flex-center text-sm text-muted" id="pageInfo">1 / 1</span>
+                <button class="btn btn-sm btn-outline" onclick="changePage(1)">下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 新增用户弹窗 ===== -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>➕ 新增用户</h3>
+                <button class="modal-close" onclick="closeModal('addModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="addForm" onsubmit="submitAddUser(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>学号 *</label>
+                            <input type="text" id="addStudentNo" placeholder="S0000000001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>姓名 *</label>
+                            <input type="text" id="addName" placeholder="张三" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>班级</label>
+                            <select id="addClass">
+                                <option value="一班">一班</option>
+                                <option value="二班">二班</option>
+                                <option value="三班">三班</option>
+                                <option value="四班">四班</option>
+                                <option value="五班">五班</option>
+                                <option value="六班">六班</option>
+                                <option value="七班">七班</option>
+                                <option value="八班">八班</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>性别</label>
+                            <select id="addSex">
+                                <option value="1">男</option>
+                                <option value="2">女</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>年龄</label>
+                            <input type="number" id="addAge" placeholder="18" min="1" max="100">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>学生信息</label>
+                        <textarea id="addInfo" placeholder="请输入学生信息..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">✅ 确认新增</button>
+                        <button type="button" class="btn btn-outline" onclick="closeModal('addModal')">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 批量生成弹窗 ===== -->
+    <div class="modal-overlay" id="generateModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>⚡ 批量生成用户数据</h3>
+                <button class="modal-close" onclick="closeModal('generateModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="generateForm" onsubmit="submitGenerate(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>生成数量</label>
+                            <input type="number" id="genTotal" value="1000000" min="1000" max="10000000">
+                            <span class="text-sm text-muted">建议 1,000 ~ 10,000,000</span>
+                        </div>
+                        <div class="form-group">
+                            <label>每批插入数</label>
+                            <input type="number" id="genBatch" value="2000" min="100" max="20000">
+                            <span class="text-sm text-muted">建议 500 ~ 5000</span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>生成方式</label>
+                            <select id="genMode">
+                                <option value="async">🚀 异步（推荐，不阻塞）</option>
+                                <option value="sync">⏳ 同步（阻塞，适合小数据）</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">🚀 开始生成</button>
+                        <button type="button" class="btn btn-outline" onclick="closeModal('generateModal')">取消</button>
+                    </div>
+                </form>
+                <div id="generateResult" class="mt-4 hidden">
+                    <div class="flex-center" style="background:var(--primary-bg);padding:12px;border-radius:8px;">
+                        <span id="genResultMessage"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 详情弹窗 ===== -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📄 用户详情</h3>
+                <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+            </div>
+            <div class="modal-body" id="detailBody">
+                <p>加载中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast 容器 ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+</div>
+
+<script>
+    // ============================================================
+    //  全局状态
+    // ============================================================
+    const API_BASE = '/api/user';
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+    let totalUsers = 0;
+    let autoRefreshTimer = null;
+
+    // ============================================================
+    //  Toast 通知
+    // ============================================================
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icons = { success: '✅', error: '❌', warning: '⚠️' };
+        toast.innerHTML = `${icons[type] || '📢'} ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(40px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ============================================================
+    //  弹窗控制
+    // ============================================================
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function openAddModal() { openModal('addModal'); }
+    function openGenerateModal() { 
+        document.getElementById('generateResult').classList.add('hidden');
+        openModal('generateModal');
+    }
+
+    // ============================================================
+    //  API 调用
+    // ============================================================
+    async function apiCall(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                headers: { 'Content-Type': 'application/json' },
+                ...options
+            });
+            const data = await response.json();
+            if (data.code !== 200 && data.code !== 0) {
+                throw new Error(data.message || '请求失败');
+            }
+            return data;
+        } catch (err) {
+            showToast(err.message, 'error');
+            throw err;
+        }
+    }
+
+    // ============================================================
+    //  加载用户列表
+    // ============================================================
+    async function loadUsers() {
+        try {
+            const data = await apiCall(`${API_BASE}/page?pageNum=${currentPage}&pageSize=${PAGE_SIZE}`);
+            const result = data.data;
+            const list = result.list || [];
+            totalUsers = result.total || 0;
+            renderUsers(list);
+            updatePagination();
+            updateStats();
+        } catch (err) {
+            console.error('加载用户失败', err);
+        }
+    }
+
+    function renderUsers(users) {
+        const tbody = document.getElementById('userTableBody');
+        if (!users || users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="empty-state"><div class="icon">📭</div><p>暂无数据</p></td></tr>`;
+            return;
+        }
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td><strong>${u.id}</strong></td>
+                <td><code style="background:var(--gray-100);padding:2px 8px;border-radius:4px;font-size:12px;">${u.studentNo || '-'}</code></td>
+                <td><strong>${u.name || '-'}</strong></td>
+                <td>${u.clazz || '-'}</td>
+                <td>${u.sex === 1 ? '👦 男' : u.sex === 2 ? '👧 女' : '-'}</td>
+                <td>${u.age || '-'}</td>
+                <td class="truncate" title="${u.studentInfo || ''}">${u.studentInfo ? u.studentInfo.substring(0, 20) + (u.studentInfo.length > 20 ? '...' : '') : '-'}</td>
+                <td style="font-size:12px;color:var(--gray-500);">${u.createdTime ? u.createdTime.replace('T', ' ').substring(0, 16) : '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="viewUser(${u.id})">详情</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">删除</button>
+                </td>
+            </tr>
+        `).join('');
+        document.getElementById('userCount').textContent = `(共 ${totalUsers} 条)`;
+    }
+
+    // ============================================================
+    //  分页
+    // ============================================================
+    function updatePagination() {
+        const totalPages = Math.ceil(totalUsers / PAGE_SIZE) || 1;
+        document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+        document.getElementById('paginationInfo').textContent = `共 ${totalUsers} 条`;
+    }
+
+    function changePage(delta) {
+        const totalPages = Math.ceil(totalUsers / PAGE_SIZE) || 1;
+        const newPage = currentPage + delta;
+        if (newPage < 1 || newPage > totalPages) return;
+        currentPage = newPage;
+        loadUsers();
+    }
+
+    // ============================================================
+    //  搜索
+    // ============================================================
+    async function searchUsers() {
+        const keyword = document.getElementById('searchInput').value.trim();
+        if (!keyword) { loadUsers(); return; }
+        try {
+            const data = await apiCall(`${API_BASE}/byNameLike?name=${encodeURIComponent(keyword)}`);
+            const users = data.data || [];
+            renderUsers(users);
+            document.getElementById('paginationInfo').textContent = `搜索 "${keyword}" 共 ${users.length} 条`;
+        } catch (err) {
+            console.error('搜索失败', err);
+        }
+    }
+
+    // 回车搜索
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchUsers();
+    });
+
+    // ============================================================
+    //  统计
+    // ============================================================
+    async function updateStats() {
+        try {
+            const countData = await apiCall(`${API_BASE}/count`);
+            document.getElementById('statTotal').textContent = countData.data || 0;
+            
+            // 获取所有进度任务
+            const progressData = await apiCall(`${API_BASE}/generate/progress/all`);
+            const progressMap = progressData.data || {};
+            const running = Object.values(progressMap).filter(p => p.status === 'RUNNING').length;
+            const total = Object.keys(progressMap).length;
+            document.getElementById('statTasks').textContent = `${running} / ${total}`;
+            
+            // 获取最快的速度
+            let maxSpeed = 0;
+            Object.values(progressMap).forEach(p => {
+                if (p.recordsPerSecond > maxSpeed) maxSpeed = p.recordsPerSecond;
+            });
+            document.getElementById('statSpeed').textContent = maxSpeed > 0 ? maxSpeed.toLocaleString() : '0';
+        } catch (err) {
+            console.error('更新统计失败', err);
+        }
+    }
+
+    // ============================================================
+    //  查看用户详情
+    // ============================================================
+    async function viewUser(id) {
+        try {
+            const data = await apiCall(`${API_BASE}/${id}`);
+            const u = data.data;
+            document.getElementById('detailBody').innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div><strong>ID</strong><br>${u.id}</div>
+                    <div><strong>学号</strong><br>${u.studentNo || '-'}</div>
+                    <div><strong>姓名</strong><br>${u.name || '-'}</div>
+                    <div><strong>班级</strong><br>${u.clazz || '-'}</div>
+                    <div><strong>性别</strong><br>${u.sex === 1 ? '男' : u.sex === 2 ? '女' : '-'}</div>
+                    <div><strong>年龄</strong><br>${u.age || '-'}</div>
+                    <div style="grid-column:1/-1;"><strong>学生信息</strong><br><div style="background:var(--gray-50);padding:12px;border-radius:8px;margin-top:4px;white-space:pre-wrap;word-break:break-all;">${u.studentInfo || '无'}</div></div>
+                    <div style="grid-column:1/-1;"><strong>创建时间</strong><br>${u.createdTime || '-'}</div>
+                    <div style="grid-column:1/-1;"><strong>更新时间</strong><br>${u.updateTime || '-'}</div>
+                </div>
+            `;
+            openModal('detailModal');
+        } catch (err) {
+            showToast('获取详情失败', 'error');
+        }
+    }
+
+    // ============================================================
+    //  删除用户
+    // ============================================================
+    async function deleteUser(id) {
+        if (!confirm(`确定要删除 ID 为 ${id} 的用户吗？`)) return;
+        try {
+            await apiCall(`${API_BASE}/${id}`, { method: 'DELETE' });
+            showToast(`用户 ${id} 已删除`, 'success');
+            loadUsers();
+        } catch (err) {
+            showToast('删除失败', 'error');
+        }
+    }
+
+    // ============================================================
+    //  新增用户
+    // ============================================================
+    async function submitAddUser(e) {
+        e.preventDefault();
+        const user = {
+            studentNo: document.getElementById('addStudentNo').value.trim(),
+            name: document.getElementById('addName').value.trim(),
+            clazz: document.getElementById('addClass').value,
+            sex: parseInt(document.getElementById('addSex').value),
+            age: parseInt(document.getElementById('addAge').value) || null,
+            studentInfo: document.getElementById('addInfo').value.trim()
+        };
+        if (!user.studentNo || !user.name) {
+            showToast('学号和姓名不能为空', 'warning');
+            return;
+        }
+        try {
+            await apiCall(`${API_BASE}/add`, {
+                method: 'POST',
+                body: JSON.stringify(user)
+            });
+            showToast('用户新增成功', 'success');
+            closeModal('addModal');
+            document.getElementById('addForm').reset();
+            loadUsers();
+        } catch (err) {
+            showToast('新增失败', 'error');
+        }
+    }
+
+    // ============================================================
+    //  批量生成
+    // ============================================================
+    async function submitGenerate(e) {
+        e.preventDefault();
+        const total = parseInt(document.getElementById('genTotal').value) || 1000000;
+        const batch = parseInt(document.getElementById('genBatch').value) || 2000;
+        const mode = document.getElementById('genMode').value;
+
+        if (total < 100) { showToast('生成数量至少100条', 'warning'); return; }
+        if (batch < 100 || batch > 20000) { showToast('每批数量应在100-20000之间', 'warning'); return; }
+
+        const resultDiv = document.getElementById('generateResult');
+        const msgSpan = document.getElementById('genResultMessage');
+        resultDiv.classList.remove('hidden');
+
+        try {
+            let endpoint = mode === 'async' ? '/generate/async' : '/generate/sync';
+            let url = `${API_BASE}${endpoint}?totalCount=${total}&batchSize=${batch}`;
+            
+            msgSpan.textContent = '⏳ 任务提交中...';
+            
+            const data = await apiCall(url, { method: 'POST' });
+            
+            if (mode === 'async') {
+                msgSpan.innerHTML = `✅ 任务已提交！<br><span class="text-sm text-muted">${data.data || ''}</span>`;
+                showToast('批量生成任务已启动', 'success');
+                // 开始自动刷新进度
+                startAutoRefresh();
+            } else {
+                msgSpan.innerHTML = `✅ 生成完成！共插入 <strong>${data.data}</strong> 条数据`;
+                showToast(`同步生成完成，共 ${data.data} 条`, 'success');
+                loadUsers();
+            }
+        } catch (err) {
+            msgSpan.innerHTML = `❌ 生成失败: ${err.message}`;
+            showToast('生成失败', 'error');
+        }
+    }
+
+    // ============================================================
+    //  加载进度任务
+    // ============================================================
+    async function loadAllProgress() {
+        try {
+            const data = await apiCall(`${API_BASE}/generate/progress/all`);
+            const map = data.data || {};
+            renderProgress(map);
+            document.getElementById('progressCount').textContent = `(${Object.keys(map).length} 个任务)`;
+        } catch (err) {
+            console.error('加载进度失败', err);
+        }
+    }
+
+    function renderProgress(map) {
+        const container = document.getElementById('progressList');
+        const entries = Object.entries(map);
+        if (entries.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>暂无进行中的任务</p></div>`;
+            return;
+        }
+        container.innerHTML = entries.map(([id, p]) => {
+            const statusClass = p.status === 'RUNNING' ? 'running' : p.status === 'COMPLETED' ? 'completed' : 'failed';
+            const statusLabel = p.status === 'RUNNING' ? '⏳ 运行中' : p.status === 'COMPLETED' ? '✅ 已完成' : '❌ 失败';
+            const barClass = p.status === 'COMPLETED' ? 'completed' : p.status === 'FAILED' ? 'failed' : '';
+            return `
+                <div style="padding:12px 0;border-bottom:1px solid var(--gray-100);">
+                    <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <div class="flex-center">
+                            <span class="status-badge ${statusClass}">${statusLabel}</span>
+                            <span class="text-sm text-muted">任务: <code>${p.taskId || id}</code></span>
+                        </div>
+                        <div class="flex-center text-sm text-muted">
+                            <span>${p.completedCount?.toLocaleString() || 0} / ${p.totalCount?.toLocaleString() || 0}</span>
+                            <span>|</span>
+                            <span>${p.percentage || 0}%</span>
+                            <span>|</span>
+                            <span>⚡ ${p.recordsPerSecond || 0} 条/秒</span>
+                            ${p.duration ? `<span>| ⏱ ${(p.duration / 1000).toFixed(1)}s</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar ${barClass}" style="width:${p.percentage || 0}%;"></div>
+                    </div>
+                    ${p.errorMessage ? `<div class="text-sm" style="color:var(--danger);">❌ ${p.errorMessage}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ============================================================
+    //  自动刷新进度
+    // ============================================================
+    function startAutoRefresh() {
+        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+        autoRefreshTimer = setInterval(() => {
+            loadAllProgress();
+            updateStats();
+        }, 2000);
+        // 5分钟后自动停止
+        setTimeout(() => {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+            }
+        }, 300000);
+    }
+
+    // ============================================================
+    //  初始化
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUsers();
+        loadAllProgress();
+        updateStats();
+        // 每15秒刷新统计
+        setInterval(() => {
+            updateStats();
+            loadAllProgress();
+        }, 15000);
+    });
+</script>
+
+</body>
+</html>

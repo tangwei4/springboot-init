@@ -1,8 +1,11 @@
 package com.springbootinit.service;
 
+import com.springbootinit.entity.GenerateProgress;
 import com.springbootinit.entity.User;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 用户服务接口
@@ -103,4 +106,38 @@ public interface UserService {
      * 根据条件统计总数
      */
     long countByCondition(User user);
+
+
+
+
+    // ==================== 新增批量生成方法 ====================
+
+    /**
+     * 异步批量生成并插入用户数据
+     * @param totalCount 生成数据总数
+     * @param batchSize 每批插入数量
+     * @return CompletableFuture 异步结果
+     */
+    CompletableFuture<Integer> generateUsersAsync(int totalCount, int batchSize);
+
+    /**
+     * 同步批量生成并插入用户数据（阻塞）
+     * @param totalCount 生成数据总数
+     * @param batchSize 每批插入数量
+     * @return 实际插入数量
+     */
+    int generateUsersSync(int totalCount, int batchSize);
+
+    /**
+     * 获取生成进度
+     * @param taskId 任务ID
+     * @return 进度信息
+     */
+    GenerateProgress getGenerateProgress(String taskId);
+
+    /**
+     * 获取所有任务进度
+     * @return 所有任务进度
+     */
+    Map<String, GenerateProgress> getAllProgress();
 }
